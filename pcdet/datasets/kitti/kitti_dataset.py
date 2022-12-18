@@ -9,6 +9,7 @@ from pcdet.utils import box_utils, calibration_kitti, common_utils, object3d_kit
 from pcdet.datasets.dataset import DatasetTemplate
 from pcdet.models.model_utils import model_nms_utils
 
+
 class KittiDataset(DatasetTemplate):
     def __init__(self, dataset_cfg, class_names, training=True, root_path=None, logger=None):
         """
@@ -23,6 +24,8 @@ class KittiDataset(DatasetTemplate):
             dataset_cfg=dataset_cfg, class_names=class_names, training=training, root_path=root_path, logger=logger
         )
         self.split = self.dataset_cfg.DATA_SPLIT[self.mode]
+        print(self.split)
+        print(self.root_path)
         self.root_split_path = self.root_path / ('training' if self.split != 'test' else 'testing')
 
         split_dir = self.root_path / 'ImageSets' / (self.split + '.txt')
@@ -51,7 +54,8 @@ class KittiDataset(DatasetTemplate):
 
     def set_split(self, split):
         super().__init__(
-            dataset_cfg=self.dataset_cfg, class_names=self.class_names, training=self.training, root_path=self.root_path, logger=self.logger
+            dataset_cfg=self.dataset_cfg, class_names=self.class_names, training=self.training,
+            root_path=self.root_path, logger=self.logger
         )
         self.split = split
         self.root_split_path = self.root_path / ('training' if self.split != 'test' else 'testing')
@@ -120,6 +124,10 @@ class KittiDataset(DatasetTemplate):
         import concurrent.futures as futures
 
         def process_single_scene(sample_idx):
+
+            if int(sample_idx) > int('007517'):
+                return None
+
             print('%s sample_idx: %s' % (self.split, sample_idx))
             info = {}
             pc_info = {'num_features': 4, 'lidar_idx': sample_idx}
@@ -128,7 +136,6 @@ class KittiDataset(DatasetTemplate):
             image_info = {'image_idx': sample_idx, 'image_shape': self.get_image_shape(sample_idx)}
             info['image'] = image_info
             calib = self.get_calib(sample_idx)
-
             P2 = np.concatenate([calib.P2, np.array([[0., 0., 0., 1.]])], axis=0)
             R0_4x4 = np.zeros([4, 4], dtype=calib.R0.dtype)
             R0_4x4[3, 3] = 1.
@@ -185,7 +192,11 @@ class KittiDataset(DatasetTemplate):
 
             return info
 
-        sample_id_list = sample_id_list if sample_id_list is not None else self.sample_id_list
+        print(sample_id_list)
+        sample_id_list = sample_id_list if sample_id_list is not None and int(sample_id_list) <= int(
+            '007517') else self.sample_id_list
+        print(sample_id_list)
+
         with futures.ThreadPoolExecutor(num_workers) as executor:
             infos = executor.map(process_single_scene, sample_id_list)
         return list(infos)
@@ -244,8 +255,8 @@ class KittiDataset(DatasetTemplate):
 
         return all_db_infos
 
-    #staticmethod
-    def generate_prediction_dicts(self,batch_dict, pred_dicts, class_names, output_path=None):
+    # staticmethod
+    def generate_prediction_dicts(self, batch_dict, pred_dicts, class_names, output_path=None):
         """
         Args:
             batch_dict:
@@ -260,6 +271,7 @@ class KittiDataset(DatasetTemplate):
         Returns:
 
         """
+
         def get_template_prediction(num_samples):
             ret_dict = {
                 'name': np.zeros(num_samples), 'truncated': np.zeros(num_samples),
@@ -276,7 +288,7 @@ class KittiDataset(DatasetTemplate):
             pred_labels = box_dict['pred_labels'].cpu().numpy()
 
             if 'WBF' in box_dict:
-                pred_labels,pred_scores,pred_boxes = model_nms_utils.compute_WBF(pred_labels,pred_scores,pred_boxes)
+                pred_labels, pred_scores, pred_boxes = model_nms_utils.compute_WBF(pred_labels, pred_scores, pred_boxes)
 
             pred_dict = get_template_prediction(pred_scores.shape[0])
             if pred_scores.shape[0] == 0:
@@ -293,8 +305,8 @@ class KittiDataset(DatasetTemplate):
             pred_dict['alpha'] = -np.arctan2(-pred_boxes[:, 1], pred_boxes[:, 0]) + pred_boxes_camera[:, 6]
             pred_dict['bbox'] = pred_boxes_img
             height = pred_dict['bbox'][:, 3] - pred_dict['bbox'][:, 1]
-            height_mask = height<25
-            pred_dict['bbox'][height_mask, 3] +=2
+            height_mask = height < 25
+            pred_dict['bbox'][height_mask, 3] += 2
             pred_dict['dimensions'] = pred_boxes_camera[:, 3:6]
             pred_dict['location'] = pred_boxes_camera[:, 0:3]
             pred_dict['rotation_y'] = pred_boxes_camera[:, 6]
@@ -404,21 +416,21 @@ def create_kitti_infos(dataset_cfg, class_names, data_path, save_path, workers=4
 
     print('---------------Start to generate data infos---------------')
 
-    dataset.set_split(train_split)
-    kitti_infos_train = dataset.get_infos(num_workers=workers, has_label=True, count_inside_pts=True)
-    with open(train_filename, 'wb') as f:
-        pickle.dump(kitti_infos_train, f)
-    print('Kitti info train file is saved to %s' % train_filename)
+    # dataset.set_split(train_split)
+    # kitti_infos_train = dataset.get_infos(num_workers=workers, has_label=True, count_inside_pts=True)
+    # with open(train_filename, 'wb') as f:
+    #     pickle.dump(kitti_infos_train, f)
+    # print('Kitti info train file is saved to %s' % train_filename)
 
-    dataset.set_split(val_split)
-    kitti_infos_val = dataset.get_infos(num_workers=workers, has_label=True, count_inside_pts=True)
-    with open(val_filename, 'wb') as f:
-        pickle.dump(kitti_infos_val, f)
-    print('Kitti info val file is saved to %s' % val_filename)
+    # dataset.set_split(val_split)
+    # kitti_infos_val = dataset.get_infos(num_workers=workers, has_label=True, count_inside_pts=True)
+    # with open(val_filename, 'wb') as f:
+    #     pickle.dump(kitti_infos_val, f)
+    # print('Kitti info val file is saved to %s' % val_filename)
 
-    with open(trainval_filename, 'wb') as f:
-        pickle.dump(kitti_infos_train + kitti_infos_val, f)
-    print('Kitti info trainval file is saved to %s' % trainval_filename)
+    # with open(trainval_filename, 'wb') as f:
+    #     pickle.dump(kitti_infos_train + kitti_infos_val, f)
+    # print('Kitti info trainval file is saved to %s' % trainval_filename)
 
     dataset.set_split('test')
     kitti_infos_test = dataset.get_infos(num_workers=workers, has_label=False, count_inside_pts=False)
@@ -435,13 +447,14 @@ def create_kitti_infos(dataset_cfg, class_names, data_path, save_path, workers=4
 
 if __name__ == '__main__':
     import sys
+
     if sys.argv.__len__() > 1 and sys.argv[1] == 'create_kitti_infos':
         import yaml
         from pathlib import Path
         from easydict import EasyDict
 
         dataset_cfg = EasyDict(yaml.safe_load(open(sys.argv[2])))
-        ROOT_DIR = '/content/drive/MyDrive/Kitti_Dataset/data/kitti'
+        ROOT_DIR = Path('/content/drive/MyDrive/Kitti_Dataset/data/kitti')
         n_workers = 1
 
         create_kitti_infos(
