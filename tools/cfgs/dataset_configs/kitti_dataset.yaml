@@ -1,4 +1,4 @@
-DATA_PATH: '/content/drive/MyDrive/Kitti_Dataset/kitti'
+DATA_PATH: '/content/drive/MyDrive/Kitti_Dataset/data/kitti'
 
 DATASET: 'KittiDataset'
 

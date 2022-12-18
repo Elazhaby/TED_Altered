@@ -441,7 +441,7 @@ if __name__ == '__main__':
         from easydict import EasyDict
 
         dataset_cfg = EasyDict(yaml.safe_load(open(sys.argv[2])))
-        ROOT_DIR = '/content/drive/MyDrive/Kitti_Dataset/kitti'
+        ROOT_DIR = '/content/drive/MyDrive/Kitti_Dataset/data/kitti'
         n_workers = 1
 
         create_kitti_infos(
