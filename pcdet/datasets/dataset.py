@@ -24,6 +24,10 @@ class DatasetTemplate(torch_data.Dataset):
         self.class_names = class_names
         self.logger = logger
         self.root_path = root_path if root_path is not None else Path(self.dataset_cfg.DATA_PATH)
+        """...Edit..."""
+        # print("Hamada")
+        # print(self.root_path)
+
         if self.dataset_cfg is None or class_names is None:
             return
 
