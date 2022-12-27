@@ -18,6 +18,7 @@ from pcdet.utils import common_utils
 import warnings
 warnings.filterwarnings("ignore")
 
+
 def parse_config():
     parser = argparse.ArgumentParser(description='arg parser')
     parser.add_argument('--cfg_file', type=str, default="cfgs/models/kitti/TED-S.yaml", help='specify the config for training')
